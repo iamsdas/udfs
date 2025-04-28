@@ -54,6 +54,56 @@ def jam_lock(lock_second=1, verbose=False):
         else:
             open(lock_file, 'x').close()  
 
+def file_exists(path, verbose=True):
+    """
+    Check if a file exists based on the path type:
+    - Local file system
+    - S3 path (starting with 's3:')
+    - HTTP/HTTPS URL
+    
+    Args:
+        path: Path to check
+        verbose: Whether to print status messages
+    
+    Returns:
+        bool: True if file exists, False otherwise
+    """
+    import os
+    
+    # Handle S3 paths
+    if path.startswith('s3:'):
+        try:
+            import s3fs
+            fs = s3fs.S3FileSystem()
+            exists = fs.exists(path)
+            if verbose and exists:
+                print(f'{path=} exists on S3.')
+            return exists
+        except ImportError:
+            if verbose:
+                print("s3fs package not installed. Please install with 'pip install s3fs'")
+            return False
+    
+    # Handle HTTP/HTTPS URLs
+    elif path.startswith(('http://', 'https://')):
+        try:
+            import requests
+            response = requests.head(path, allow_redirects=True)
+            exists = response.status_code == 200
+            if verbose and exists:
+                print(f'{path=} exists with status code 200.')
+            return exists
+        except Exception as e:
+            if verbose:
+                print(f"Error checking URL {path}: {str(e)}")
+            return False
+    
+    # Handle local files
+    else:
+        exists = os.path.exists(path)
+        if verbose and exists:
+            print(f'{path=} exists locally.')
+        return exists
 
 @fused.cache(cache_max_age='30d')
 def bounds_to_file_chunk(bounds:list=[-180, -90, 180, 90], target_num_files: int = 64, target_num_file_chunks: int = 64):
@@ -3037,7 +3087,19 @@ def get_tiles(
 ):
     bounds = to_gdf(bounds)
     import mercantile
+    import geopandas as gpd
+    import numpy as np
 
+    if bounds.empty or bounds.geometry.isna().any() or len(bounds) == 0:
+        if verbose:
+            print("Warning: Empty or invalid bounds provided")
+        return gpd.GeoDataFrame(columns=["geometry", "x", "y", "z"])
+
+    if np.isnan(bounds.total_bounds).any():
+        if verbose:
+            print("Warning: Empty or invalid bounds provided")
+        return gpd.GeoDataFrame(columns=["geometry", "x", "y", "z"])
+    
     if zoom is not None:
         if verbose: 
             print("zoom is provided; target_num_tiles will be ignored.")
@@ -3276,6 +3338,73 @@ def udf_to_json(udf):
         except:
             udf_nail_json = func_to_udf(udf).json()
     return udf_nail_json
+
+def get_query_embedding(client, query, model="text-embedding-3-large"):
+    """Generate embeddings for a query using OpenAI API
+    client = OpenAI(api_key=fused.secrets["my_fused_key"])"""
+    embedding = list(map(float, client.embeddings.create(
+        input=query, model=model
+    ).data[0].embedding))
+    return embedding
+
+def query_to_params(query, num_match=1, rerank=True, embedding_path="s3://fused-users/fused/misc/embedings/CDL_crop_name.parquet"):
+    import pandas as pd
+    from openai import OpenAI
+    
+    print(f"this is the '{query}'")
+    df_crops = pd.read_parquet(embedding_path)
+    api_key = fused.secrets["my_fused_key"] 
+    
+    client = OpenAI(api_key=api_key)
+    response = client.embeddings.create(input=query, model="text-embedding-3-large")
+    query_embedding = response.data[0].embedding
+    
+    df_crops['similarity'] = df_crops['embedding'].apply(lambda e: cosine_similarity(query_embedding, e))
+    
+    if not rerank:
+        results = df_crops.sort_values('similarity', ascending=False).head(num_match)
+        print(results[['value', 'description']])
+        return results['value'].tolist()
+    
+    candidates = df_crops.sort_values('similarity', ascending=False).head(10)
+    
+    try:
+        items = "\n".join([f"{i}) Value: {row['value']}, Description: {row['description']}" 
+                         for i, (_, row) in enumerate(candidates.iterrows(), 1)])
+        
+        response = client.chat.completions.create(
+            model="gpt-4.1",
+            messages=[{"role": "user", "content": 
+                f"Query: {query}\nRate relevance (0-100):\n{items}\n\nComma-separated scores only:"}],
+            temperature=0
+        )
+        
+        scores = [int(s.strip()) for s in response.choices[0].message.content.split(',')]
+        if len(scores) != len(candidates):
+            raise ValueError(f"Got {len(scores)} scores for {len(candidates)} candidates")
+            
+        candidates.loc[:, 'rerank_score'] = scores
+        relevant = candidates[candidates['rerank_score'] > 40].sort_values('rerank_score', ascending=False)
+        
+        if len(relevant) == 0 and len(candidates) > 0:
+            relevant = candidates.sort_values('rerank_score', ascending=False).head(1)
+            
+        print(relevant[['value', 'description', 'rerank_score']])
+        return relevant['value'].tolist()
+        
+    except Exception as e:
+        print(f"Reranking failed: {e}, using embedding search")
+        results = candidates.head(num_match)
+        print(results[['value', 'description']])
+        return results['value'].tolist()
+
+
+def cosine_similarity(a, b):
+    dot_product = sum(x*y for x, y in zip(a, b))
+    norm_a = sum(x*x for x in a)**0.5
+    norm_b = sum(y*y for y in b)**0.5
+    return dot_product / (norm_a * norm_b)
+
 
 def submit_job(udf, df_arg, cache_max_age='12h'):
     udf_nail_json = udf_to_json(udf)
