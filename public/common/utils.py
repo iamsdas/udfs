@@ -105,6 +105,32 @@ def file_exists(path, verbose=True):
             print(f'{path=} exists locally.')
         return exists
 
+def unzip_file(zip_path_str):
+    import zipfile
+    from pathlib import Path
+    zip_path = Path(zip_path_str)
+    extract_dir = zip_path.parent
+    with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+        zip_ref.extractall(extract_dir)
+        extracted_files = zip_ref.namelist()
+
+    print(f"Extracted files: {extract_dir}")
+    for f in extracted_files:
+        full_path = extract_dir / f
+        if full_path.exists():
+            stat = full_path.stat()
+            size_kb = stat.st_size / 1024
+            print(f"{full_path.name:50} {size_kb:10.1f} KB")
+        else:
+            print(f"{full_path.name:50} <not found>")
+
+
+@fused.cache
+def get_crs(path):
+    import rasterio
+    with rasterio.open(path) as src:
+        return src.crs
+
 @fused.cache(cache_max_age='30d')
 def bounds_to_file_chunk(bounds:list=[-180, -90, 180, 90], target_num_files: int = 64, target_num_file_chunks: int = 64):
     import pandas as pd
@@ -381,8 +407,16 @@ def pointify(lines, point_distance, segment_col='segment_id'):
     points_gdf = gpd.GeoDataFrame(points_list, crs=lines.crs)
     return points_gdf.to_crs(crs_orig)
 
-def chunkify(lst, chunk_size):
-    return [lst[i:i + chunk_size] for i in range(0, len(lst), chunk_size)]
+def chunkify(lst, chunk_size=None, n_chunks=None):
+    if (chunk_size is not None) and (n_chunks is not None):
+        raise ValueError("Specify only one of chunk_size or n_chunks, not both.")
+    if chunk_size is not None:
+        return [lst[i:i + chunk_size] for i in range(0, len(lst), chunk_size)]
+    if n_chunks is not None:
+        k, m = divmod(len(lst), n_chunks)
+        return [lst[i * k + min(i, m):(i + 1) * k + min(i + 1, m)] for i in range(n_chunks)]
+    raise ValueError("You must provide either chunk_size or n_chunks.")
+
 
 @fused.cache
 def get_meta_chunk_datestr(base_path, total_row_groups=52, start_year=2020, end_year=2024, n_chunks_row_group=2, n_chunks_datestr=90,):
