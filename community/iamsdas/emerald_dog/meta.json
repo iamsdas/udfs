@@ -12,6 +12,8 @@
           "entrypoint": "udf",
           "parameters": {},
           "metadata": {
+            "fused:name": "emerald_dog",
+            "fused:slug": "emerald_dog",
             "fused:vizConfig": {
               "tileLayer": {
                 "@@type": "TileLayer",
@@ -53,9 +55,7 @@
                 ]
               }
             },
-            "fused:udfType": "auto",
-            "fused:slug": "emerald_dog",
-            "fused:name": "emerald_dog"
+            "fused:udfType": "auto"
           },
           "source": "emerald_dog.py",
           "headers": []
