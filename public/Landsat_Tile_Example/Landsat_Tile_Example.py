@@ -13,6 +13,7 @@ def udf(
     import palettable
     import pystac_client
     from pystac.extensions.eo import EOExtension as eo
+    
 
     # Load pinned versions of utility functions.
     utils = fused.load("https://github.com/fusedio/udfs/tree/bb712a5/public/common/").utils
