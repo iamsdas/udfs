@@ -4,7 +4,7 @@ def udf(city='Paris', resolution=11):
     import geopandas as gpd
     import requests
     import re
-    # set a resolution limit 
+    # set a resolution limit  
     if resolution > 11:resolution=11
 
     common_utils = fused.load("https://github.com/fusedio/udfs/tree/3569595/public/common/").utils
