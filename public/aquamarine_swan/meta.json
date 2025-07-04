@@ -12,6 +12,8 @@
           "entrypoint": "udf",
           "parameters": {},
           "metadata": {
+            "fused:name": "aquamarine_swan",
+            "fused:slug": "aquamarine_swan",
             "fused:vizConfig": {
               "tileLayer": {
                 "@@type": "TileLayer",
@@ -53,9 +55,7 @@
                 ]
               }
             },
-            "fused:udfType": "auto",
-            "fused:slug": "aquamarine_swan",
-            "fused:name": "aquamarine_swan"
+            "fused:udfType": "auto"
           },
           "source": "aquamarine_swan.py",
           "headers": []
