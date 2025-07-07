@@ -8,6 +8,7 @@ def udf(
     bounds: fused.types.Bounds = None, buffer_multiple: float = 1, num_tiles: int = 16
 ):
     # This helper function turns our bounds into XYZ tiles
+
     
     tiles = common.get_tiles(bounds, target_num_tiles=num_tiles)
     # Buffering tiles internally
