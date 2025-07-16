@@ -30,6 +30,9 @@ def udf(
 ) -> xr.DataArray:
 
     client = arraylake.Client(token=fused.secrets["ARRAYLAKE_TOKEN"])
+
+
+    # hello
     repo = client.get_repo(repo_name, read_only=True)
 
     ds = repo.to_xarray(mask_and_scale=False, chunks={})
