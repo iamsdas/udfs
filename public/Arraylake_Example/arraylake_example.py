@@ -39,6 +39,8 @@ def udf(
 
     # try to infer the resolution of the dataset
     pixel_res = 110e3 * abs(ds.latitude.values[1] - ds.latitude.values[0])
+
+    # test
     resolution = int(5 * 2 ** (15 - zoom))
     coarsen_factor = max(int(resolution // pixel_res), 1)
     print(f"Coarsening by {coarsen_factor}")
