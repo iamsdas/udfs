@@ -9,6 +9,8 @@ def udf():
        "type": "FeatureCollection",
        "features": []
     }
+
+    
     stations = requests.get(
         "https://gbfs.lyft.com/gbfs/1.1/bos/es/station_information.json"
     ).json()
