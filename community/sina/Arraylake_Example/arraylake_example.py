@@ -19,6 +19,8 @@ import arraylake
 arraylake.config.set({"chunkstore.use_delegated_credentials": True})
 
 
+
+
 @fused.udf
 def udf(
     bounds: fused.types.Bounds = [-58.483,-34.702,-58.376,-34.560],
