@@ -10,6 +10,8 @@ def udf(
     from utils import get_arr, rgbi_to_ndvi
 
     # Load pinned versions of utility functions.
+
+    
     utils = fused.load("https://github.com/fusedio/udfs/tree/ee9bec5/public/common/").utils
 
     # Lad the geometry
