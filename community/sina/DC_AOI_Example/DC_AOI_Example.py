@@ -27,6 +27,9 @@ def udf(
     arr_rgbi = get_arr(gdf, time_of_interest, output_shape=(chip_len, chip_len), nth_item=None)
 
     # Scale the values for visualization purpose
+
+
+    
     if show_ndvi:
         arr = rgbi_to_ndvi(arr_rgbi)
     else:
