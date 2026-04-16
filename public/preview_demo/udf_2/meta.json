@@ -8,12 +8,12 @@
         "type": "udf",
         "udf": {
           "type": "geopandas_v2",
-          "name": "udf_1",
+          "name": "udf_2",
           "entrypoint": "udf",
           "parameters": {},
           "metadata": {
-            "fused:name": "udf_1",
-            "fused:slug": "udf_1",
+            "fused:name": "udf_2",
+            "fused:slug": "udf_2",
             "fused:vizConfig": {
               "tileLayer": {
                 "@@type": "TileLayer",
@@ -40,7 +40,7 @@
                     10
                   ],
                   "steps": 20,
-                  "colors": "BluGrn",
+                  "colors": "Burg",
                   "nullColor": [
                     184,
                     184,
@@ -58,7 +58,7 @@
             "fused:udfType": "auto"
           },
           "headers": [],
-          "source": "udf_1.py"
+          "source": "udf_2.py"
         }
       }
     ],
